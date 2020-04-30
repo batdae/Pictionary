@@ -1,53 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js"></script>
-  <style>
-    canvas {
-      box-shadow: 0 0 1px 0
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pictionary Game</title>
+    <style>
+        canvas {
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        form {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid black;
+        }
+        label {
+            display: block;
+        }
+        .users {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid black;
+        }
+    </style>
 </head>
 <body>
-  <h1>Salut</h1>
+    <h1>Salut <span class="nom"></span>, comment tu vas ?</h1>
+    <form>
+        <label>
+            Stroke weight: 
+            <input type="range" min="1" max="50" value="4" class="js-weight">
+        </label>
+        <label>
+            Color: 
+            <input type="color" value='#00000' class="js-color">
+        </label>
+    </form>
 
+    <ul class="js-users users"></ul>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const username = prompt('Tell me your name');
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
 
-    socket.emit('username', username)
+        const username = prompt('Tell me your name');
+        const nom = document.querySelector('.nom');
+        nom.innerHTML = username;
+        socket.emit('username', username);
 
-    function setup () {
-      createCanvas(500, 500);
-    }
+        const weightInput = document.querySelector('.js-weight');
+        const colorInput = document.querySelector('.js-color');
+        function setup () {
+            createCanvas(500,500);
+        }
 
-    function mouseDragged () {
-      line(mouseX, mouseY, pmouseX, pmouseY);
+        function mouseDragged () {
+            strokeWeight(weightInput.value);
+            stroke(colorInput.value);
+            line(mouseX, mouseY, pmouseX, pmouseY);
 
-      // socket.emit('line', {
-      //   'mouseX': mouseX,
-      //   'mouseY': mouseY,
-      //   'pmouseX': pmouseX,
-      //   'pmouseY': pmouseY
-      // });
-      socket.emit('line', {
-        mouseX,
-        mouseY,
-        pmouseX,
-        pmouseY
-      })
-    }
+            socket.emit('line', {
+                mouseX: mouseX,
+                mouseY: mouseY,
+                pmouseX: pmouseX,
+                pmouseY: pmouseY,
+                weight: weightInput.value,
+                color: colorInput.value
+            })
+        }
 
-    socket.on('line', data => {
-      line(data.mouseX, data.mouseY, data.pmouseX, data.pmouseY);
-    })
+        socket.on('line', data => {
+            strokeWeight(data.weight);
+            stroke(data.color);
+            line(data.mouseX, data.mouseY,data.pmouseX, data.pmouseY);
+        })
 
-  </script>
+        const usersList = document.querySelector('.js-users');
+        socket.on('users', data => {
+            usersList.innerHTML = '';
+            data.forEach(username => {
+                const li = document.createElement('li');
+                li.innerHTML = username;
+                usersList.appendChild(li);
+            })
+        });
+    </script>
 </body>
 </html>
